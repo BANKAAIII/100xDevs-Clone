@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// User model
+model User {
+  id             Int      @id@default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  token          String?
+  userPurchase   UserPurchases[]
+  certificate    Certificate[]
+  sessions       Session[]
+}
+
+// User-Course join table
+model UserPurchases{
+  @@id ([userId, courseId])
+  user           User     @relation(fields: [userId], references: [id])
+  userId         Int
+  course         Course   @relation(fields: [courseId], references: [id])
+  courseId       Int
+}
+
+//Course model
+model Course{
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String
+  imageUrl       String
+  purchasedBy    UserPurchases[]   
+  Course         CourseContent[]
+  certificate    Certificate[]
+  certIssued     Boolean  @default(false)
+}
+
+//Course-Content joinTable
+model CourseContent{
+  @@id ([courseId,contentId])
+  course         Course   @relation(fields: [courseId],references: [id])
+  courseId       Int
+  content      Content  @relation(fields: [contentId],references: [id])
+  contentId      Int
+}
+
+// Course Content model
+model Content{
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String
+  hidden         Boolean  @default(false)                 //Only to display when purchased
+  type           String   @default("folder")              // packet containing all the content for a course
+  thumbnail      String
+  createdAt      DateTime @default(now())
+  content        CourseContent[]
+}
+
+//Certificate model
+
+model Certificate {
+  id             Int      @id @default(autoincrement())
+  user           User     @relation(fields: [userId],references: [id] )
+  userId         Int
+  course         Course   @relation(fields: [courseId], references: [id])
+  courseId       Int
+
+}
+
+
+// Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+}
